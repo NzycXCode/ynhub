@@ -1,231 +1,30 @@
---[[ YNZYX HUB - Executor Edition (replica da sua UI + ESP + AIMBOT)
-    - Cria ScreenGui com:
-        MenuGui
-          backgroundFrame (título)
-          SideBarFrame (HOME, ESP, AIMBOT)
-          OptionsFrame (HomeSubFrame, EspSubFrame, AimbotSubFrame)
-    - Animação de hover nos botões (Size + TextSize)
-    - Sistema de abas (Visible true/false)
-    - ESP (BoxHandleAdornment)
-    - Aimbot (closest to crosshair, suavizado)
-]]
+-- Carregar Rayfield
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
+-- Criar janela principal
+local Window = Rayfield:CreateWindow({
+    Name = "YNZYX HUB",
+    LoadingTitle = "YNZYX Hub",
+    LoadingSubtitle = "by ynzyx",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "YNZYXHub", -- pasta onde configs ficam salvas
+        FileName = "Config"
+    }
+})
 
 -- Estados
 local ESP_ENABLED = false
 local AIMBOT_ENABLED = false
-local FOV = 120 -- círculo virtual de mira
+local FOV = 120
 
--- Helper: fontes e cores
-local FONT = Enum.Font.GothamSemibold
-local BG_COLOR = Color3.fromRGB(18, 18, 20)
-local ACCENT = Color3.fromRGB(115, 95, 255)
-local TEXT = Color3.fromRGB(230, 230, 230)
-local PANEL = Color3.fromRGB(24, 24, 28)
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
--- Criar GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "YNZYX_ScreenGui"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.Parent = game:GetService("CoreGui")
-
-local MenuGui = Instance.new("Frame")
-MenuGui.Name = "MenuGui"
-MenuGui.Size = UDim2.new(0, 500, 0, 320)
-MenuGui.Position = UDim2.new(0, 30, 0, 30)
-MenuGui.BackgroundColor3 = BG_COLOR
-MenuGui.BorderSizePixel = 0
-MenuGui.Parent = screenGui
-
-local cornerMain = Instance.new("UICorner", MenuGui)
-cornerMain.CornerRadius = UDim.new(0, 12)
-
--- Background / título
-local backgroundFrame = Instance.new("Frame")
-backgroundFrame.Name = "backgroundFrame"
-backgroundFrame.Size = UDim2.new(1, 0, 0, 52)
-backgroundFrame.BackgroundColor3 = PANEL
-backgroundFrame.BorderSizePixel = 0
-backgroundFrame.Parent = MenuGui
-Instance.new("UICorner", backgroundFrame).CornerRadius = UDim.new(0, 12)
-
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -24, 1, 0)
-Title.Position = UDim2.new(0, 12, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "|| YNZYX HUB ||"
-Title.Font = FONT
-Title.TextSize = 18
-Title.TextColor3 = TEXT
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = backgroundFrame
-local titleStroke = Instance.new("UIStroke", Title)
-titleStroke.Thickness = 1
-titleStroke.Color = Color3.fromRGB(60,60,68)
-
--- Sidebar
-local SideBarFrame = Instance.new("Frame")
-SideBarFrame.Name = "SideBarFrame"
-SideBarFrame.Size = UDim2.new(0, 140, 1, -64)
-SideBarFrame.Position = UDim2.new(0, 12, 0, 64)
-SideBarFrame.BackgroundColor3 = PANEL
-SideBarFrame.BorderSizePixel = 0
-SideBarFrame.Parent = MenuGui
-Instance.new("UICorner", SideBarFrame).CornerRadius = UDim.new(0, 10)
-
--- Botão helper
-local function makeButton(parent, name, text, posY)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.new(1, -20, 0, 32)
-    btn.Position = UDim2.new(0, 10, 0, posY)
-    btn.BackgroundColor3 = BG_COLOR
-    btn.Text = text
-    btn.Font = FONT
-    btn.TextSize = 16
-    btn.TextColor3 = TEXT
-    btn.AutoButtonColor = false
-    btn.Parent = parent
-
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", btn)
-    stroke.Thickness = 1
-    stroke.Color = Color3.fromRGB(60,60,68)
-    return btn
-end
-
-local BTN_HOME = makeButton(SideBarFrame, "HOME", "HOME", 8)
-local BTN_ESP = makeButton(SideBarFrame, "ESP", "ESP", 48)
-local BTN_AIMBOT = makeButton(SideBarFrame, "AIMBOT", "AIMBOT", 88)
-
--- OptionsFrame
-local OptionsFrame = Instance.new("Frame")
-OptionsFrame.Name = "OptionsFrame"
-OptionsFrame.Size = UDim2.new(1, -172, 1, -64)
-OptionsFrame.Position = UDim2.new(0, 160, 0, 64)
-OptionsFrame.BackgroundColor3 = PANEL
-OptionsFrame.BorderSizePixel = 0
-OptionsFrame.Parent = MenuGui
-Instance.new("UICorner", OptionsFrame).CornerRadius = UDim.new(0, 10)
-
--- Subframes
-local HomeSubFrame = Instance.new("Frame")
-HomeSubFrame.Name = "HomeSubFrame"
-HomeSubFrame.Size = UDim2.new(1, -20, 1, -20)
-HomeSubFrame.Position = UDim2.new(0, 10, 0, 10)
-HomeSubFrame.BackgroundColor3 = BG_COLOR
-HomeSubFrame.BorderSizePixel = 0
-HomeSubFrame.Parent = OptionsFrame
-Instance.new("UICorner", HomeSubFrame).CornerRadius = UDim.new(0, 10)
-
-local EspSubFrame = HomeSubFrame:Clone()
-EspSubFrame.Name = "EspSubFrame"
-EspSubFrame.Parent = OptionsFrame
-
-local AimbotSubFrame = HomeSubFrame:Clone()
-AimbotSubFrame.Name = "AimbotSubFrame"
-AimbotSubFrame.Parent = OptionsFrame
-
--- Conteúdo Home
-for _, f in ipairs({HomeSubFrame, EspSubFrame, AimbotSubFrame}) do
-    local t = Instance.new("TextLabel")
-    t.Name = "Header"
-    t.BackgroundTransparency = 1
-    t.Size = UDim2.new(1, 0, 0, 24)
-    t.Position = UDim2.new(0, 8, 0, 8)
-    t.Font = FONT
-    t.TextSize = 18
-    t.TextColor3 = TEXT
-    t.TextXAlignment = Enum.TextXAlignment.Left
-    t.Text = f.Name == "HomeSubFrame" and "HOME"
-        or (f.Name == "EspSubFrame" and "ESP" or "AIMBOT")
-    t.Parent = f
-end
-
-local HomeInfo = Instance.new("TextLabel")
-HomeInfo.BackgroundTransparency = 1
-HomeInfo.Size = UDim2.new(1, -16, 0, 60)
-HomeInfo.Position = UDim2.new(0, 8, 0, 40)
-HomeInfo.Font = FONT
-HomeInfo.TextSize = 14
-HomeInfo.TextColor3 = TEXT
-HomeInfo.TextXAlignment = Enum.TextXAlignment.Left
-HomeInfo.TextYAlignment = Enum.TextYAlignment.Top
-HomeInfo.Text = "YN PROJECTS\nDesign UI - ynzyx\nDeveloper - ynzyx"
-HomeInfo.Parent = HomeSubFrame
-
--- Botões de toggle nas abas ESP/AIMBOT
-local function makeToggle(parent, name, text, posY)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.new(0, 160, 0, 32)
-    btn.Position = UDim2.new(0, 8, 0, posY)
-    btn.BackgroundColor3 = BG_COLOR
-    btn.Text = text
-    btn.Font = FONT
-    btn.TextSize = 16
-    btn.TextColor3 = TEXT
-    btn.AutoButtonColor = false
-    btn.Parent = parent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", btn)
-    stroke.Thickness = 1
-    stroke.Color = Color3.fromRGB(60,60,68)
-    return btn
-end
-
-local ToggleESP = makeToggle(EspSubFrame, "ToggleESP", "ESP: OFF", 48)
-local ToggleAIM = makeToggle(AimbotSubFrame, "ToggleAimbot", "AIMBOT: OFF", 48)
-
--- Visibilidade inicial
-HomeSubFrame.Visible = true
-EspSubFrame.Visible = false
-AimbotSubFrame.Visible = false
-
-local function showTab(name)
-    HomeSubFrame.Visible = (name == "Home")
-    EspSubFrame.Visible = (name == "ESP")
-    AimbotSubFrame.Visible = (name == "Aimbot")
-end
-
-BTN_HOME.MouseButton1Click:Connect(function() showTab("Home") end)
-BTN_ESP.MouseButton1Click:Connect(function() showTab("ESP") end)
-BTN_AIMBOT.MouseButton1Click:Connect(function() showTab("Aimbot") end)
-
--- Hover animation nos botões (Size + TextSize)
-local normalSize = UDim2.new(1, -20, 0, 32)
-local hoverSize = UDim2.new(1, -20, 0, 36)
-local normalTextSize = 16
-local hoverTextSize = 18
-local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-local function wireHover(btn)
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, tweenInfo, {Size = hoverSize}):Play()
-        TweenService:Create(btn, tweenInfo, {TextSize = hoverTextSize}):Play()
-        btn.BackgroundColor3 = Color3.fromRGB(28,28,32)
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, tweenInfo, {Size = normalSize}):Play()
-        TweenService:Create(btn, tweenInfo, {TextSize = normalTextSize}):Play()
-        btn.BackgroundColor3 = BG_COLOR
-    end)
-end
-
-for _, b in ipairs({BTN_HOME, BTN_ESP, BTN_AIMBOT, ToggleESP, ToggleAIM}) do
-    wireHover(b)
-end
-
--- ESP: BoxHandleAdornment por personagem (funciona sem Drawing API)
+-- Funções ESP
 local function ensureESP(char)
     if not char or not char:IsDescendantOf(workspace) then return end
     if not char:FindFirstChild("HumanoidRootPart") then return end
@@ -234,7 +33,7 @@ local function ensureESP(char)
         box.Name = "YN_ESP_BOX"
         box.Adornee = char
         box.Size = Vector3.new(4, 6, 2)
-        box.Color3 = ACCENT
+        box.Color3 = Color3.fromRGB(115,95,255)
         box.Transparency = 0.55
         box.AlwaysOnTop = true
         box.ZIndex = 0
@@ -247,7 +46,7 @@ local function clearESP(char)
     if b then b:Destroy() end
 end
 
--- Aimbot target
+-- Funções Aimbot
 local function getClosestTarget()
     local closestPart, closestDist = nil, math.huge
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -258,8 +57,7 @@ local function getClosestTarget()
             if hrp and hum and hum.Health > 0 then
                 local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
                 if onScreen then
-                    local dist = (Vector2.new(pos.X, pos.Y) - Camera.ViewportSize / 2).Magnitude
-                    -- Filtro básico de time; ajuste conforme seu jogo
+                    local dist = (Vector2.new(pos.X, pos.Y) - Camera.ViewportSize/2).Magnitude
                     local sameTeam = (plr.Team ~= nil and LocalPlayer.Team ~= nil and plr.Team == LocalPlayer.Team)
                     if not sameTeam and dist < FOV and dist < closestDist then
                         closestDist, closestPart = dist, hrp
@@ -306,25 +104,45 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Toggles via UI
-ToggleESP.MouseButton1Click:Connect(function()
-    ESP_ENABLED = not ESP_ENABLED
-    ToggleESP.Text = ESP_ENABLED and "ESP: ON" or "ESP: OFF"
-end)
+-- Aba Home
+local HomeTab = Window:CreateTab("Home", 4483362458)
+HomeTab:CreateSection("Info")
+HomeTab:CreateLabel("YN PROJECTS\nDesign UI - ynzyx\nDeveloper - ynzyx")
 
-ToggleAIM.MouseButton1Click:Connect(function()
-    AIMBOT_ENABLED = not AIMBOT_ENABLED
-    ToggleAIM.Text = AIMBOT_ENABLED and "AIMBOT: ON" or "AIMBOT: OFF"
-end)
+-- Aba ESP
+local EspTab = Window:CreateTab("ESP", 4483362458)
+EspTab:CreateSection("ESP Controls")
 
--- Hotkeys opcionais (F/G) além dos botões
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        ESP_ENABLED = not ESP_ENABLED
-        ToggleESP.Text = ESP_ENABLED and "ESP: ON" or "ESP: OFF"
-    elseif input.KeyCode == Enum.KeyCode.G then
-        AIMBOT_ENABLED = not AIMBOT_ENABLED
-        ToggleAIM.Text = AIMBOT_ENABLED and "AIMBOT: ON" or "AIMBOT: OFF"
-    end
-end)
+EspTab:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Flag = "ESPEnabled",
+    Callback = function(Value)
+        ESP_ENABLED = Value
+    end,
+})
+
+-- Aba Aimbot
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
+AimbotTab:CreateSection("Aimbot Controls")
+
+AimbotTab:CreateToggle({
+    Name = "Enable Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotEnabled",
+    Callback = function(Value)
+        AIMBOT_ENABLED = Value
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "FOV",
+    Range = {50, 300},
+    Increment = 10,
+    Suffix = "px",
+    CurrentValue = 120,
+    Flag = "AimbotFOV",
+    Callback = function(Value)
+        FOV = Value
+    end,
+})
